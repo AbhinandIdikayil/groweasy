@@ -1,6 +1,7 @@
 import { IService } from "../interfaces/i.service";
-import { leadQueue, getAllJobResults } from "../queue/leadProcessor";
+import { leadQueue, getAllJobResults, getAllImportedRecords } from "../queue/leadProcessor";
 import { BatchJobResult } from "../interfaces/BatchJobResult";
+import { CRMRecord } from "../interfaces/CRMRecord";
 
 export class Service implements IService {
     async processCsvAndReturnLead(csvData: string): Promise<string> {
@@ -15,5 +16,9 @@ export class Service implements IService {
 
     async getAllJobResults(): Promise<BatchJobResult[]> {
         return getAllJobResults();
+    }
+
+    async getAllImportedRecords(): Promise<CRMRecord[]> {
+        return getAllImportedRecords();
     }
 }

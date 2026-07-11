@@ -16,4 +16,7 @@ router.route('/bulk-upload')
 router.route('/bulk-upload')
     .get(controller.getAllJobResults.bind(controller));
 
+router.route('')
+    .get(controller.getAllImportedRecords.bind(controller));
+
 export { router }

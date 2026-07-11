@@ -32,4 +32,13 @@ export class Controller {
             return res.status(500).json({ message: 'Failed to get job results', error });
         }
     }
+
+    async getAllImportedRecords(req: Request, res: Response) {
+        try {
+            const records = await this.service.getAllImportedRecords();
+            return res.json(records);
+        } catch (error) {
+            return res.status(500).json({ message: 'Failed to get imported records', error });
+        }
+    }
 }

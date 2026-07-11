@@ -39,7 +39,7 @@ export async function mapToCRMFormat(records: any[]): Promise<CRMRecord[]> {
       2. data_source must be one of: leads_on_demand, meridian_tower, eden_park, varah_swamy, sarjapur_plots. If not match, empty string.
       3. created_at must be valid JS date string.
       4. If multiple email/mobile exist, use the first and move others to crm_note.
-      5. Skip records missing BOTH email and mobile.
+      5. Map EVERY row in the input CSV. The returned JSON array MUST have the exact same number of items as the data rows in the CSV. Do not skip any rows.
       Return ONLY a JSON array of objects.
     `;
 

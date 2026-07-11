@@ -44,9 +44,14 @@ export async function getAllJobResults(): Promise<BatchJobResult[]> {
     return results;
 }
 
+export async function getAllImportedRecords(): Promise<CRMRecord[]> {
+    const jobs = await getAllJobResults();
+    return jobs.flatMap(j => j.records);
+}
+
 export const worker = new Worker('lead-processing', async (job) => {
     const { data } = job.data;
-    const records: any[] = [];
+    const records: { row: number; data: any }[] = [];
     const skippedRecords: { row: number; reason: string }[] = [];
 
     let rowIndex = 0;
@@ -54,18 +59,14 @@ export const worker = new Worker('lead-processing', async (job) => {
 
     for await (const record of parser as any) {
         rowIndex++;
-        if (record.email || record.mobile_without_country_code) {
-            records.push(record);
-        } else {
-            skippedRecords.push({ row: rowIndex, reason: 'Missing both email and mobile' });
-        }
+        records.push({ row: rowIndex, data: record });
     }
 
     const result: BatchJobResult = {
         jobId: job.id as string,
         status: 'processing',
         totalRecords: rowIndex,
-        totalSkipped: skippedRecords.length,
+        totalSkipped: 0,
         totalImported: 0,
         records: [],
         skippedRecords,
@@ -75,13 +76,28 @@ export const worker = new Worker('lead-processing', async (job) => {
     const allMappedRecords: CRMRecord[] = [];
     for (let i = 0; i < records.length; i += 5) {
         const batch = records.slice(i, i + 5);
-        const mappedRecords = await mapToCRMFormat(batch);
-        allMappedRecords.push(...mappedRecords);
+        const batchData = batch.map(b => b.data);
+        const mappedRecords = await mapToCRMFormat(batchData);
+        
+        for (let j = 0; j < mappedRecords.length; j++) {
+            const mapped = mappedRecords[j];
+            // If the AI somehow skipped records and the arrays don't align perfectly, 
+            // fallback to i + j + 1 for row index.
+            const rowNumber = batch[j] ? batch[j].row : (i + j + 1);
+            
+            if (!mapped.email && !mapped.mobile_without_country_code) {
+                skippedRecords.push({ row: rowNumber, reason: 'Missing both email and mobile' });
+            } else {
+                allMappedRecords.push(mapped);
+            }
+        }
     }
 
     result.status = 'completed';
     result.totalImported = allMappedRecords.length;
+    result.totalSkipped = skippedRecords.length;
     result.records = allMappedRecords;
+    result.skippedRecords = skippedRecords;
     jobResults.set(job.id as string, result);
 
     return result;
