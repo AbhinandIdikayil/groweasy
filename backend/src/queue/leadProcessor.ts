@@ -7,8 +7,6 @@ import { ENV } from '../config/env';
 import { BatchJobResult } from '../interfaces/BatchJobResult';
 import { CRMRecord } from '../interfaces/CRMRecord';
 
-const TTL_MS = 24 * 60 * 60 * 1000;
-
 const connection = new IORedis({
     host: ENV.REDIS_HOST,
     port: Number(ENV.REDIS_PORT),
@@ -19,20 +17,10 @@ const connection = new IORedis({
 
 export const leadQueue = new Queue('lead-processing', { connection });
 
-const jobResults = new Map<string, { result: BatchJobResult; completedAt: number }>();
-
-export function getJobResult(jobId: string): BatchJobResult | undefined {
-    return jobResults.get(jobId)?.result;
-}
+const jobResults = new Map<string, BatchJobResult>();
 
 export function getAllJobResults(): BatchJobResult[] {
-    const now = Date.now();
-    for (const [id, entry] of jobResults) {
-        if (entry.result.status !== 'processing' && now - entry.completedAt > TTL_MS) {
-            jobResults.delete(id);
-        }
-    }
-    return Array.from(jobResults.values()).map(e => e.result);
+    return Array.from(jobResults.values());
 }
 
 export const worker = new Worker('lead-processing', async (job) => {
@@ -61,7 +49,7 @@ export const worker = new Worker('lead-processing', async (job) => {
         records: [],
         skippedRecords,
     };
-    jobResults.set(job.id as string, { result, completedAt: Date.now() });
+    jobResults.set(job.id as string, result);
 
     const allMappedRecords: CRMRecord[] = [];
     for (let i = 0; i < records.length; i += 5) {
@@ -73,7 +61,11 @@ export const worker = new Worker('lead-processing', async (job) => {
     result.status = 'completed';
     result.totalImported = allMappedRecords.length;
     result.records = allMappedRecords;
-    jobResults.set(job.id as string, { result, completedAt: Date.now() });
+    jobResults.set(job.id as string, result);
 
     return result;
-}, { connection });
+}, {
+    connection,
+    removeOnComplete: { age: 86400 },
+    removeOnFail: { age: 86400 },
+});
