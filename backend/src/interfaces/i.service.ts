@@ -1,5 +1,6 @@
-import { Express, Request, Response } from 'express'
+import { BatchJobResult } from './BatchJobResult';
 
 export interface IService {
-    processCsvAndReturnLead(csv: Express): Promise<any>;
+    processCsvAndReturnLead(csvData: string): Promise<string>;
+    getAllJobResults(): Promise<BatchJobResult[]>;
 }
