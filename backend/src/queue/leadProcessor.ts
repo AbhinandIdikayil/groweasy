@@ -19,8 +19,29 @@ export const leadQueue = new Queue('lead-processing', { connection });
 
 const jobResults = new Map<string, BatchJobResult>();
 
-export function getAllJobResults(): BatchJobResult[] {
-    return Array.from(jobResults.values());
+export async function getAllJobResults(): Promise<BatchJobResult[]> {
+    const results = Array.from(jobResults.values());
+
+    const completedJobs = await leadQueue.getJobs(['completed']);
+    for (const job of completedJobs) {
+        if (!jobResults.has(job.id as string)) {
+            const returnValue = job.returnvalue as BatchJobResult | null;
+            if (returnValue) {
+                const partial: BatchJobResult = {
+                    jobId: job.id as string,
+                    status: returnValue.status || 'completed',
+                    totalRecords: returnValue.totalRecords || 0,
+                    totalSkipped: returnValue.totalSkipped || 0,
+                    totalImported: returnValue.totalImported || 0,
+                    records: returnValue.records || [],
+                    skippedRecords: returnValue.skippedRecords || [],
+                };
+                results.push(partial);
+            }
+        }
+    }
+
+    return results;
 }
 
 export const worker = new Worker('lead-processing', async (job) => {
