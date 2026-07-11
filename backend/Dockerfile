@@ -2,8 +2,11 @@ FROM node:alpine
 
 WORKDIR /build
 
+RUN npm install -g yarn
+
+
 COPY package.json yarn.lock ./
-RUN corepack enable && yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile
 
 COPY . .
 
