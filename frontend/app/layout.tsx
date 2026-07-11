@@ -10,6 +10,8 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Inter } from "next/font/google";
 import "../app/globals.css";
 
@@ -27,19 +29,29 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${inter.variable} h-full antialiased font-sans`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <TooltipProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <TooltipProvider>
           <SidebarProvider>
             <Sidebar>
               {/* Brand header */}
-              <div className="flex items-center gap-2.5 px-5 py-5 border-b border-sidebar-border">
-                <div className="size-7 rounded-md bg-highlight flex items-center justify-center shrink-0">
-                  <span className="text-highlight-foreground text-xs font-bold leading-none">G</span>
+              <div className="flex items-center justify-between px-5 py-5 border-b border-sidebar-border">
+                <div className="flex items-center gap-2.5">
+                  <div className="size-7 rounded-md bg-highlight flex items-center justify-center shrink-0">
+                    <span className="text-highlight-foreground text-xs font-bold leading-none">G</span>
+                  </div>
+                  <span className="font-semibold text-sm tracking-tight text-foreground">
+                    GrowEasy
+                  </span>
                 </div>
-                <span className="font-semibold text-sm tracking-tight text-foreground">
-                  GrowEasy
-                </span>
+                <ThemeToggle />
               </div>
 
               <SidebarContent className="p-3 pt-4">
@@ -69,7 +81,8 @@ export default function RootLayout({
               {children}
             </main>
           </SidebarProvider>
-        </TooltipProvider>
+          </TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
